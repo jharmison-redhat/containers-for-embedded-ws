@@ -1,11 +1,21 @@
 # Exercise 1
 
+## Prerequisites
+
+For this to work, you'll need Python 3.6 or newer and `git`. Some other maybe helpful things are `curl`, and a little bit of knowledge about Python could help.
+
 ## Setup
 
-Change into the `helloworld` directory in this folder. For example, from the project root:
+Clone this project to your local workstation, no matter what the OS is:
 
 ```sh
-cd ex1/helloworld
+git clone https://github.com/jharmison-redhat/containers-for-embedded-ws
+```
+
+Change into the `helloworld` directory in this folder, beneath the project root.
+
+```sh
+cd containers-for-embedded-ws/ex1/helloworld
 ```
 
 ### A fresh development environment
