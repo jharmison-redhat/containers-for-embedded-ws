@@ -7,7 +7,7 @@
         "url": "https://github.com/jharmison-redhat/containers-for-embedded-ws.git",
         "directory": "helloworld-js"
     },
-    "main": "app.js",
+    "main": "lib/index.js",
     "license": "BSD-2-Clause",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
