@@ -40,7 +40,7 @@ python3 -m pip install --upgrade pip setuptools
 
 ### A quick peek at our helloworld app
 
-You should open or `cat` the file located at helloworld/src/helloworld/app.py. It's a pretty simple "Hello, World!" example using the Flask web framework in Python. You shouldn't have to know python to be able to puzzle out what it does. Flask, as a web framework, enables us to use Python functions as callables for path-based requests from a web client and we've defined for the `/` route (meaning the bare address of the web server) to call a function that returns a simple string that includes our system's hostname.
+You should open or `cat` the file located at `src/helloworld/app.py`. It's a pretty simple "Hello, World!" example using the Flask web framework in Python. You shouldn't have to know python to be able to puzzle out what it does. Flask, as a web framework, enables us to use Python functions as callables for path-based requests from a web client and we've defined for the `/` route (meaning the bare address of the web server) to call a function that returns a simple string that includes our system's hostname.
 
 ### An installed app
 
@@ -106,6 +106,14 @@ On Windows, with PowerShell:
 
 ```ps
 Remove-Item -Recurse venv
+```
+
+#### To REALLY reset everything
+
+This will reset everything in this folder to exactly match the contents of the git HEAD:
+
+```sh
+git clean -dxf
 ```
 
 ## The point
