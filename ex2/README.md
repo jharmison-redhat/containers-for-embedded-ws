@@ -20,6 +20,8 @@ To install Docker Desktop on your workstation, you should follow [their installa
 
 #### A quick note about Docker ubiquity
 
-Docker is available for installation on macOS, Windows, and many Linux distributions. Docker relies on the native features of the Linux kernel to implement its isolation mechanisms as an underlying component of the architecture, so when you run Docker on your Mac or Windows machine, you're actually running a Linux VM - it's just wrapped up and hidden from you quite a bit. Running Docker on a Linux distribution, like Fedora or Debian, uses the native features of the OS on which it's installed. Because Docker encapsulates the configuration of this Linux VM for you, you may prefer using that on platforms other than Linux. Docker and Podman both conform to the Open Container Initiative specifications for images and runtimes - and Podman intentionally keeps its command line interface similar to make migration from Docker easier, changing how those kernel features are used but not how they're exposed to you.
+Docker is available for installation on macOS, Windows, and many Linux distributions. Docker relies on the native features of the Linux kernel to implement its isolation mechanisms as an underlying component of the architecture, so when you run Docker on your Mac or Windows machine, you're actually running a Linux VM - it's just wrapped up and hidden from you quite a bit. Running Docker on a Linux distribution, like Fedora or Debian, uses the native features of the OS on which it's installed.
+
+Because Docker encapsulates the configuration of this Linux VM for you, you may prefer using that on platforms other than Linux. Docker and Podman both conform to the Open Container Initiative specifications for images and runtimes - and Podman intentionally keeps its command line interface similar to make migration from Docker easier, changing how those kernel features are used but not how they're exposed to you.
 
 ## 
