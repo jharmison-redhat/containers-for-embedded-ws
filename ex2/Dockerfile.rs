@@ -32,4 +32,5 @@ COPY --from=builder /app/target/release/helloworld /usr/local/bin/helloworld
 COPY helloworld-rs/Rocket.toml /etc/helloworld.toml
 ENV ROCKET_CONFIG=/etc/helloworld.toml
 USER 1001
+EXPOSE 8000
 CMD ["/usr/local/bin/helloworld"]
