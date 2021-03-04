@@ -20,11 +20,13 @@ sudo dnf -y install podman podman-docker
 
 To install Docker Desktop on your workstation, you should follow [their installation instructions](https://docs.docker.com/get-docker/). You should probably follow the [optional post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/) if you expect your user to be able to call `docker` without `sudo`. Docker usually requires `root` to run on Linux, unlike `podman`.
 
-#### A quick note about Docker ubiquity
+#### A quick note about Docker
 
 Docker is available for installation on macOS, Windows, and many Linux distributions. Docker relies on the native features of the Linux kernel to implement its isolation mechanisms as an underlying component of the architecture, so when you run Docker on your Mac or Windows machine, you're actually running a Linux VM - it's just wrapped up and hidden from you quite a bit. Running Docker on a Linux distribution, like Fedora or Debian, uses the native features of the OS on which it's installed.
 
 Because Docker encapsulates the configuration of this Linux VM for you, you may prefer using that on platforms other than Linux. Docker and Podman both conform to the Open Container Initiative specifications for images and runtimes - and Podman intentionally keeps its command line interface similar to make migration from Docker easier, changing how those kernel features are used but not how they're exposed to you.
+
+Podman may also be installed on those systems, with a bit of configuration. You can even get Podman [running in WSL2](https://www.redhat.com/sysadmin/podman-windows-ws2). It's not as easy on those systems as Docker, because it's not a focus of the Podman project. If you're on Linux, you may find that installing Podman, even alongside Docker, works just fine and gives you some extra isolation. It's up to you!
 
 ### If you need to be able to curl and can't
 
