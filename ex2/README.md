@@ -267,4 +267,4 @@ Container Registries are another thing specified in the OCI spec, under the dedi
 
 ---
 
-1: The Fedora project is actually not doing a single `COPY` and releasing that - they're actually squashing images, but this gets a bit more complex than we should cover here :)
+<sup>1</sup>: The Fedora project is actually not doing a single `COPY` and releasing that - they're actually squashing images, but this gets a bit more complex than we should cover here :)
