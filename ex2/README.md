@@ -4,6 +4,8 @@
 
 For this to work, you'll need a container runtime (or the ability to install one), and to have already git cloned this repository for the previous exercise.
 
+These examples assume you are in the root of the project, that is the folder named `containers-for-embedded-ws`.
+
 ## Setup
 
 ### Installing a container runtime
