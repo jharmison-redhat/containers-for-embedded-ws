@@ -290,7 +290,7 @@ You've built and packaged two applications, in totally different programming lan
 
 ### A note on distribution
 
-Container Registries are another thing specified in the OCI spec, under the dedicated [Distribution Spec](https://github.com/opencontainers/distribution-spec). We won't cover how to interact with registries here - but you've been downloading images from them this whole time. Uploading your own images for others to use is easy once you have an account on one (or you can instantiate your own registry!).
+Container Registries are another thing specified in the OCI spec, under the dedicated [Distribution Spec](https://github.com/opencontainers/distribution-spec). We won't cover how to interact with registries here - but you've been downloading images from them this whole time. Uploading your own images for others to use is easy once you have an account on one (or you can instantiate your own registry!). It's also possible to export/import images from your local image storage using the [save](https://docs.docker.com/engine/reference/commandline/save/) and [load](https://docs.docker.com/engine/reference/commandline/load/) commands, since container images are really just tarballs of metadata + data. These work with [Podman](https://github.com/containers/podman/blob/master/docs/source/markdown/podman-load.1.md) as well as in docker-archive and oci-archive formats for [Buildah](https://github.com/containers/buildah/blob/master/docs/buildah-push.md#destination). Once a container has been loaded into your runtime, it should provide the same abstractions necessary to instantiate your application the same way on other platforms with a Linux kernel.
 
 ---
 
