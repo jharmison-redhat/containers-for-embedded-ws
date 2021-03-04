@@ -246,7 +246,7 @@ The Rust example isn't much more complicated than our Python example, but it may
 
 The best part of these multistage builds is that the final image that's produced just has Fedora and our compiled binary laid on top. This is sound production image building practice, in general, though there are other ways to accomplish similar goals with less Dockerfile complexity - for example [S2I](https://codeburst.io/source-to-image-s2i-by-example-9635c80b6108). Multistage builds, when well structured, give us that as well as a better local development experience.
 
-Let's make sure this example it works like we expect:
+Let's make sure this example works like we expect:
 
 ```sh
 docker run --rm -it -p 8000:8000 helloworld-rs
