@@ -66,15 +66,15 @@ Let's unpack that a bit.
 FROM registry.fedoraproject.org/fedora:33
 ```
 
-This means that we're starting from a base image running Fedora 33. Let's look at that image a bit.
+This means that we're starting from a base image running Fedora 33. Let's look into that image's metadata:
 
 ```sh
 docker inspect registry.fedoraproject.org/fedora:33
 ```
 
-Note that `docker` will pull the image before inspecting it, but you could also use `skopeo` to inspect the image directly from the registry.
+Note that `docker` will pull the image before inspecting it, but you could also use `skopeo inspect docker://registry.fedoraproject.org/fedora:33` to inspect the image directly from the registry - without downloading the layers first.
 
-In particular, notice this section of the `inspect` output:
+In particular, notice this section of the `docker inspect` output:
 
 ```json
 [
@@ -89,7 +89,7 @@ In particular, notice this section of the `inspect` output:
 ]
 ```
 
-There is a single layer in this image (yours may not match the above if they updated the base image), and we are presented with the hash of that layer. Any other images that build on top of this image will have this same layer, and no others. What makes a layer, though, and why is this image a single layer?
+There is a single layer in this image (yours may not match the above if they updated the base image), and we are presented with the hash of that layer. Any other images that build on top of this image will have this same layer, and others defined by the rest of our Dockerfile. What makes a layer, though, and why is this image a single layer?
 
 The next line in this Dockerfile says this:
 
@@ -99,7 +99,9 @@ COPY helloworld-py /app
 
 This will copy something from the path at `helloworld-py` and place it at `/app`. If we executed this from the project root, `helloworld-py` would be a folder that contains the Python package we worked with in exercise 1.
 
-This line, that starts with `COPY`, adds a new layer all by itself. Every instruction in the Dockerfile results in a completely empty copy-on-write (COW) layer being populated with the results of that step, then the layer is hashed, and follow-on layers continue to execute. This means that for the Fedora image to be a single layer, it had to be created in a single step. This single step could have been simply a `COPY` line after calling `FROM scratch`, which has been a [special case](https://github.com/moby/moby/pull/8827) in Docker for a long time, and made it into the OCI spec [almost immediately](https://github.com/opencontainers/umoci/blob/05c30365a67487176d42b4bf0fb5db9459dd54ec/CHANGELOG.md#000-rc2---2016-12-12). If you install a Linux distribution into a folder (you can just `dnf install --installroot=/some/folder <some package>` to install a full Fedora system into a folder, for example), and then `COPY` the whole folder into `/`, you have a container image with most of a distribution in it! [^1]
+This line, that starts with `COPY`, adds a new layer all by itself. Every instruction in the Dockerfile results in a completely empty copy-on-write (COW) layer being populated with the results of that step, then the layer is hashed, and follow-on layers continue to execute.
+
+This means that for the Fedora image to be a single layer, it had to be created in a single step. This single step could have been simply a `COPY` line after calling `FROM scratch`, which has been a [special case](https://github.com/moby/moby/pull/8827) in Docker for a long time, and made it into the OCI spec [almost immediately](https://github.com/opencontainers/umoci/blob/05c30365a67487176d42b4bf0fb5db9459dd54ec/CHANGELOG.md#000-rc2---2016-12-12). If you install a Linux distribution into a folder (you can just `dnf install --installroot=/some/folder <some package>` to install a full Fedora system into a folder, for example), and then `COPY` the whole folder into `/`, you have a container image with most of a distribution in it!<sup>1</sup>
 
 Knowing that every line you put in a Dockerfile adds a new layer makes the next line make a bit more sense:
 
@@ -121,7 +123,7 @@ STEP 3: RUN dnf -y install python3-pip  && pip3 install /app
 
 # trimmed for brevity
 
-WARNING: Running pip install with root privileges is generally not a good idea. Try \`pip3 install --user\` instead.
+WARNING: Running pip install with root privileges is generally not a good idea. Try `pip3 install --user` instead.
 ```
 
 Our next Dockerfile command is an interesting one:
@@ -228,19 +230,19 @@ You can `Ctrl+C` the server again - we're done with that for now.
 
 ## What did that even get us?
 
-So, there's a lot of complex tooling involved in running Python applications locally. There's a lot of complex tooling involved in running containers locally, too. Why did we just swap out all of our tooling complexity and call it a day?
+There's a lot of complex tooling involved in running Python applications locally. There's a lot of complex tooling involved in running containers locally, too. Why did we just swap out all of our tooling complexity?
 
-Simple - we got a lot more than a consistent Python environment. Build the other Dockerfile in that directory:
+The answer, of course, is that we got a lot more than a consistent Python environment. Build the other Dockerfile in that directory:
 
 ```sh
 docker build . -f ex2/Dockerfile.rs -t helloworld-rs
 ```
 
-Feel free to explore that image in the same way, or look over the Dockerfile to see how different it is. We performed the same kind of steps - moving our application code into the container image, installing language-specific tooling, compiling the application with it, and specifying how to run the application - but in a pretty different order.
+Feel free to explore that image in the same way, or look over the Dockerfile to see how different it is. You'll probably have a bit of time to do that during the initial build. We performed the same kind of steps - installing language-specific tooling, moving our application code into the container image, compiling the application, and specifying how to run the application - but in a pretty different order and manner.
 
-The Rust example isn't much more complicated than our Python example, but it may seem that way. We used a convention called [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/) to enable us to cache layers that go through the process of cacheing and building dependencies and our Hello, World example in different stages. These intermediate stages enable us to save a lot of time as we compile not only our simple application, but also the complex dependencies of it!
+The Rust example isn't much more complicated than our Python example, but it may seem that way. We used a convention called [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/) to enable us to cache layers that go through the process of downloading and building dependencies for our helloworld example in different stages. These intermediate stages enable us to save a lot of time as we compile not only our simple application, but also the complex dependencies of it, because of the way that image layer cacheing works for container image builds. This is sound production image building practice, in general, though there are other ways to accomplish similar goals with less Dockerfile complexity - for example [S2I](https://codeburst.io/source-to-image-s2i-by-example-9635c80b6108).
 
-Let's make sure it works like we expect:
+Let's make sure this example it works like we expect:
 
 ```sh
 docker run --rm -it -p 8000:8000 helloworld-rs
@@ -253,14 +255,16 @@ $ curl localhost:8000
 Hello, world, from 67bfd19c410f!
 ```
 
-If that works like you expect, exit the web app with `Ctrl+C` again and make a small change to `helloworld-rs/src/main.rs` in a way that won't affect the dependencies, like changing line 9 to have a slightly different output string (maybe all caps?), and rerun the build. It should be pretty fast, considering you're recompiling an entire web application! My initial build took 48 seconds (my computer's pretty quick) and my follow-on builds after changing the program only took around 8 seconds.
+If that works like you expect, exit the web app with `Ctrl+C` again and make a small change to `helloworld-rs/src/main.rs` in a way that won't affect the dependencies, like changing line 9 to have a slightly different output string (maybe all caps?), then rerun the build. It should be pretty fast, despite recompiling an entire web application! My initial build took 48 seconds (my computer's pretty quick) and my follow-on builds after changing the program only took around 8 seconds. You should see a speedup no matter what, though, as you take advantage of the cached layers.
 
 ## The point
 
-You've built and packaged two applications, in totally different programming languages, with exactly one set of tooling installed on your machine. Both should work for all of us with a functional container runtime. The fact that both of these applications do the same thing isn't the point, and the fact that they're simple web applications doesn't mean that's all we can do. We've gained process portability across any Linux system - even a VM for the Windows and macOS users - with consistent environments for installing and running our images. **And** they're easy to distribute.
+You've built and packaged two applications, in totally different programming languages, with exactly one set of tooling installed on your machine. Both should work for all of us with a functional container runtime. The fact that both of these applications do the same thing isn't the point, and the fact that they're simple web applications doesn't mean that's all we can do. We've gained process portability across any Linux system - even a VM for the Windows and macOS users - with consistent environments for installing and running our images. **And**, for those of us using `podman`, they're running isolated even from other processes running as our own user, let alone the rest of the system we're running on. **And**, because of the `USER` line in the multistage build for our Rust application, even inside the container the process has no privilege! **And** these images are _very_ easy to distribute.
 
 ### A note on distribution
 
 Container Registries are another thing specified in the OCI spec, under the dedicated [Distribution Spec](https://github.com/opencontainers/distribution-spec). We won't cover how to interact with registries here - but you've been downloading images from them this whole time. Uploading your own images for others to use is easy once you have an account on one (or you can instantiate your own registry!).
 
-[^1]: The Fedora project is actually not doing a single `COPY` and releasing that - they're actually squashing images, but this gets a bit more complex than we should cover here :)
+---
+
+1: The Fedora project is actually not doing a single `COPY` and releasing that - they're actually squashing images, but this gets a bit more complex than we should cover here :)
