@@ -31,4 +31,5 @@ FROM registry.fedoraproject.org/fedora:33
 COPY --from=builder /app/target/release/helloworld /usr/local/bin/helloworld
 COPY helloworld-rs/Rocket.toml /etc/helloworld.toml
 ENV ROCKET_CONFIG=/etc/helloworld.toml
+USER 1001
 CMD ["/usr/local/bin/helloworld"]
