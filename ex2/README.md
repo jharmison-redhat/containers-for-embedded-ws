@@ -36,13 +36,13 @@ Supposing you did exercise 1 without `curl` and used the pure-python implementat
 function curl { python -c "from urllib.request import urlopen; print(urlopen('http://${1}').read().decode().strip())" ; }
 ```
 
-This isn't great for general-purpose replacement of `curl`, but will work for our controlled examples here.
+This isn't great for general-purpose replacement of `curl`, but will work for our controlled examples here. Those of you on Windows using an updated version of PowerShell should have `curl` aliased to `Invoke-WebRequest`.
 
 ## Anatomy of a Dockerfile
 
 ### Dockerfile vs Containerfile
 
-Dockerfile is a convention that, since popularized by Docker, has stuck around. A Containerfile would more appropriately describe the collection of steps that build OCI container images, but almost all tooling looks for a file named simply "Dockerfile" by default.
+Dockerfile is a convention that, since popularized by Docker, has stuck around. A Containerfile would more appropriately describe the collection of steps that build OCI container images, but almost all tooling looks for a file named simply "Dockerfile" by default. We're just going to stick with popular convention and refer to Dockerfiles.
 
 ### What's in the box
 
@@ -107,16 +107,16 @@ This line, that starts with `COPY`, adds a new layer all by itself. Every instru
 
 This means that for the Fedora image to be a single layer, it had to be created in a single step. This single step could have been simply a `COPY` line after calling `FROM scratch`, which has been a [special case](https://github.com/moby/moby/pull/8827) in Docker for a long time, and made it into the OCI spec [almost immediately](https://github.com/opencontainers/umoci/blob/05c30365a67487176d42b4bf0fb5db9459dd54ec/CHANGELOG.md#000-rc2---2016-12-12). If you install a Linux distribution into a folder (you can just `dnf install --installroot=/some/folder <some package>` to install a full Fedora system into a folder, for example), and then `COPY` the whole folder into `/`, you have a container image with most of a distribution in it!<sup>1</sup>
 
-Knowing that every line you put in a Dockerfile adds a new layer makes the next line make a bit more sense:
+Knowing that every instruction you put in a Dockerfile adds a new layer makes the next line make a bit more sense:
 
 ```dockerfile
 RUN dnf -y install python3-pip \
  && pip3 install /app
 ```
 
-This is a single Dockerfile command, split onto two lines for readability. The `\` character is an escape that ignores the newline following it, so this line is equivalent to `RUN dnf -y install python3-pip && pip3 install /app`. This line makes sure we have `pip3` in our container's environment, which is the same Python package manager we used in exercise 1, and then installs our application - but not in editable development mode, or in a virtual environment. We don't need to worry about editable mode, because our container image is immutable (every layer is hashed!). We don't need to worry about a virtual environment, because we're not dirtying up our own systems inside this container.
+This is a single Dockerfile instruction, split onto two lines for readability. The `\` character is an escape that ignores the newline following it, so this instruction is equivalent to the single line `RUN dnf -y install python3-pip && pip3 install /app`. This line makes sure we have `pip3` in our container's environment, which is the same Python package manager we used in exercise 1, and then installs our application - but not in editable development mode, or in a virtual environment. We don't need to worry about editable mode because our container image is immutable (every layer is hashed!). We don't need to worry about a virtual environment because we're not dirtying up our own systems inside this container.
 
-This COW layer would contain only the differences inside the container file system that are different from the previous step, where our source code was copied in, and this step, where the python package is installed. In this case that mostly means that the files are now in /usr/local/lib/python3.9/site-packages, because that's where `pip3` installs packages on Fedora 33 by default. Note that yes, we just modified a system directory with a `pip3 install` - and we didn't even call `sudo` or anything. Inside the container we appear to be running as `root`, so you may have even caught a warning message from pip flying by about using `pip` as root on your system. Mine said:
+This COW layer would contain only the differences inside the container file system that are different from the previous step, where our source code was copied in. In this case that mostly means that there are now some files in /usr/local/lib/python3.9/site-packages, because that's where `pip3` installs packages on Fedora 33 by default. Note that yes, we just modified a system directory with a `pip3 install` without `sudo`. Inside the container we appear to be running as `root`, so you may have even caught a warning message from pip flying by about using `pip` as root on your system. Mine said:
 
 ```console
 $ podman build . -f ex2/Dockerfile.py -t helloworld-py
@@ -130,13 +130,15 @@ STEP 3: RUN dnf -y install python3-pip  && pip3 install /app
 WARNING: Running pip install with root privileges is generally not a good idea. Try `pip3 install --user` instead.
 ```
 
-Our next Dockerfile command is an interesting one:
+You should consider carefully the implications of allowing your application to run inside a container with access to most of a distribution's filesystem as root. Root inside the container can wreak nearly as much havoc as root outside - it's just confined to this one application, without additional escalation/escape.
+
+Our next Dockerfile instruction is an interesting one:
 
 ```dockerfile
 ENV FLASK_APP=helloworld.app
 ```
 
-This command doesn't add anything new to the filesystem - but it does add new metadata to the container image. This metadata tells your runtime to export the environment variable, in the same way that we manually did in exercise 1, before continuing any further. As the image continues to build, any new `RUN` commands would have it exported as well. `ENV` declarations are pretty useful, considering the popularity of OS environment variables as a means of parameterizing applications or changing their behavior.
+This instruction doesn't add anything new to the filesystem but it does add new metadata to the container image. The build will actually create an empty layer here, but it will simply reuse this empty layer every time we add metadata. This metadata tells your runtime to export the environment variable, in the same way that we manually did in exercise 1, before continuing any further. As the image continues to build, any new `RUN` instructions would have it exported as well. `ENV` declarations are pretty useful, considering the popularity of OS environment variables as a means of parameterizing applications or changing their behavior.
 
 The last line in this Dockerfile is where the rubber meets the road for us:
 
@@ -148,25 +150,25 @@ This line adds another metadata layer to let our runtime know what command to ru
 
 ### Building this image
 
-Ensure that you're in the project root (that is, `ls` returns the `ex` directories as well as the `helloworld-js` and `helloworld-py` directories), and run the following to build this image:
+Ensure that you're in the project root (that is, `ls` returns the `ex` directories as well as the `helloworld-rs` and `helloworld-py` directories), and run the following to build this image:
 
 ```sh
 docker build . -f ex2/Dockerfile.py -t helloworld-py
 ```
 
-This means that we're building within the context of the project root (so our `helloworld-py` folder lines up), using the Dockerfile we've been exploring, and we're tagging this image as `helloworld-py`. Really, `docker` and `podman` are nice enough to give this image a fully qualified image name of `localhost/helloworld-py:latest`, but we're going to keep using the shorthand.
+The dot means that we're building within the context of the project root (so our `helloworld-py` folder lines up), using the Dockerfile we've been exploring, and we're tagging this image as `helloworld-py`. Really, `docker` and `podman` are nice enough to give this image a fully qualified image name of `localhost/helloworld-py:latest`, but we're going to keep using the shorthand.
 
 You should see some things scroll by and, no matter what platform you're on, you should end up on a line that says `STEP 6: COMMIT helloworld-py`. This means that we have executed all of these steps serially, and packaged all of the layers into a single manifest - which we hashed and named. This manifest, whether by hash or name, now refers to the collection of layers that we've been talking about - including filesystem changes on those lines that change the filesystem, and metadata on those layers that didn't.
 
 ### Exploring our image
 
-Because we just used `CMD` to define how to run our containers, we can provide arbitrary other commands to run inside the container image when we instantiate a container from them. Let's use a shell to poke around inside our container:
+Because we just used `CMD` to define how to run our containers instead of `ENTRYPOINT`, we can provide arbitrary other commands to run inside the container image when we instantiate a container from them. Let's use a shell to poke around inside our container:
 
 ```sh
 docker run --rm -it helloworld-py bash
 ```
 
-You should get a shell prompt that ends in `#` indicating that you are root. Let's see what's in this image:
+You should get a shell prompt that ends in `#` indicating that you are root inside the container. Let's see what's in this image:
 
 ```console
 [root@15f0e4ebcc9b /]# ls -l /app  # You can see the artifacts we COPY'd in here
@@ -194,7 +196,7 @@ helloworld.app
 exit
 ```
 
-The name of my container is not the same as the name of your container. When a container is instantiated, it usually gets a randomized container ID from the runtime, which sets that ID as the hostname inside the container. You can explicitly set the hostname if you need to, but it shouldn't matter too bad for the most part.
+The hostname of my container is not the same as the hostname of your container. When a container is instantiated, it usually gets a randomized container ID from the runtime, which sets that ID as the hostname inside the container. You can explicitly set the hostname if you need to, but it shouldn't matter too bad for the most part.
 
 ```console
 $ docker run --rm -it --hostname helloworld-py helloworld-py bash
@@ -204,26 +206,39 @@ helloworld-py
 exit
 ```
 
-Every time you instantiate a new container from this image, the image is unpacked layer-by-layer. It's a fresh copy of the environment, which we defined in the Dockerfile. Let's run this container image without extra arguments and see what we see:
+Every time you instantiate a new container from this image, the image is unpacked layer-by-layer. Any metadata defined for those layers is applied as they're unpacked (`ENV` being the one we're using here). It's a fresh copy of the environment that we defined in the Dockerfile. Let's run this container image without extra arguments and see what we see, but we're going to add one other helpful argument to give our container instance a friendly name:
 
 ```sh
-docker run --rm helloworld-py
+docker run --rm --name helloworld helloworld-py
 ```
 
-You should see Flask start up very similarly to how it did for us earlier. In another terminal or window, again curl the port we know it's listening on:
+You should see Flask start up very similarly to how it did for us earlier. In this case you won't get the terminal coloration, because Flask can detect that it's not running in a proper terminal with color support. In another terminal or window, again curl the port we know it's listening on:
 
 ```console
 $ curl localhost:5000
 curl: (7) Failed to connect to localhost port 5000: Connection refused
 ```
 
-The reason this didn't work is important to understand. Inside the container, our Flask application is listening on port 5000/tcp. Outside of the container, nothing is listening on that port. By namespacing networks down from the kernel's root namespace, we have isolated the container networking from our host - and we haven't instructed the runtime to allow anything through. Most runtimes will allow the container to egress through your host automatically (usually using some form of NAT), but not allow ingress by default. We can specify individual ports to forward, though. `Ctrl+C` your flask server and it should quit gracefully, then try running it again like this:
+The reason this didn't work is important to understand. Inside the container, our Flask application is listening on port 5000/tcp. Outside of the container, nothing is listening on that port. By namespacing networks down from the kernel's root namespace, we have isolated the container networking from our host - and we haven't instructed the runtime to allow anything through. Most runtimes will allow the container to egress through your host automatically (usually using some form of NAT), but not allow ingress by default.
+
+Let's look from inside the container, using the friendly name we gave the instance, and see what we get:
+
+```sh
+docker exec -it helloworld bash
+```
+
+This should drop you into a terminal inside the container, again as root, but now your shell is a second process running alongside our flask server.
+
+```console
+curl localhost:5000
+
+We can specify individual ports to forward, though. `Ctrl+C` your flask server and it should quit gracefully, then try running it again like this:
 
 ```sh
 docker run --rm -p 5000:5000 helloworld-py
 ```
 
-And rerun your `curl`:
+And rerun your `curl` from outside the container:
 
 ```console
 $ curl localhost:5000
@@ -244,13 +259,13 @@ The answer, of course, is that we got a lot more than a consistent Python enviro
 docker build . -f ex2/Dockerfile.rs -t helloworld-rs
 ```
 
-Feel free to explore that image in the same way, or look over the Dockerfile to see how different it is. You'll probably have a bit of time to do that during the initial build. We performed the same kind of steps - installing language-specific tooling, moving our application code into the container image, compiling the application, and specifying how to run the application - but in a pretty different order and manner.
+Feel free to explore that image in the same way, or look over the Dockerfile to see how different it is. You'll probably have time to do that during the initial build; it can take a while. We perform the same kind of steps in this Dockerfile as the last one - installing language-specific tooling, moving our application code into the container image, compiling the application, and specifying how to run the application - but in a pretty different order and manner.
 
-The Rust example isn't much more complicated than our Python example, but it may seem that way. We used a convention called [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/) to enable us to cache layers that go through the process of downloading and building dependencies for our helloworld example in different stages. These intermediate stages enable us to save a lot of time as we compile not only our simple application, but also the complex dependencies of it, because of the way that image layer cacheing works for container image builds.
+The Rust example isn't much more complicated than our Python example, but it may seem that way. Most obviously it needs to compile the application, and its dependencies, rather than simply bundling up a package of interpreted code. We also used a convention called [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/) to enable us to cache layers that go through the process of downloading and building dependencies for our helloworld example in different stages. These intermediate stages enable us to save a lot of time as we compile our simple application and its complex dependencies. Individual layers are cached by your runtime, so if the intermediate steps don't result in any changes you won't rerun them.
 
 The best part of these multistage builds is that the final image that's produced just has Fedora and our compiled binary laid on top. This is sound production image building practice, in general, though there are other ways to accomplish similar goals with less Dockerfile complexity - for example [S2I](https://codeburst.io/source-to-image-s2i-by-example-9635c80b6108). Multistage builds, when well structured, give us that as well as a better local development experience.
 
-Let's make sure this example works like we expect:
+Let's make sure this example works like we expect, noting that it's listening on a different port inside the container than the Flask example:
 
 ```sh
 docker run --rm -it -p 8000:8000 helloworld-rs
@@ -263,11 +278,11 @@ $ curl localhost:8000
 Hello, world, from 67bfd19c410f!
 ```
 
-If that works like you expect, exit the web app with `Ctrl+C` again and make a small change to `helloworld-rs/src/main.rs` in a way that won't affect the dependencies, like changing line 9 to have a slightly different output string (maybe all caps?), then rerun the build. It should be pretty fast, despite recompiling an entire web application! My initial build took 48 seconds (my computer's pretty quick) and my follow-on builds after changing the program only took around 8 seconds. You should see a speedup no matter what, though, as you take advantage of the cached layers.
+If that works like you expect, exit the web app with `Ctrl+C` again and make a small change to `helloworld-rs/src/main.rs` in a way that won't affect the dependencies, like changing line 9 to have a slightly different output string (maybe all caps?), then rerun the build. It should be pretty fast, despite recompiling an entire web application. My initial build took 48 seconds (my computer's pretty quick) and my follow-on builds after changing the program only took around 8 seconds. You should see a speedup as you take advantage of the cached layers.
 
 ## The point
 
-You've built and packaged two applications, in totally different programming languages, with exactly one set of tooling installed on your machine. Both should work for all of us with a functional container runtime. The fact that both of these applications do the same thing isn't the point, and the fact that they're simple web applications doesn't mean that's all we can do. We've gained process portability across any Linux system - even a VM for the Windows and macOS users - with consistent environments for installing and running our images. **And**, for those of us using `podman`, they're running isolated even from other processes running as our own user, let alone the rest of the system we're running on. **And**, because of the `USER` line in the multistage build for our Rust application, even inside the container the process has no privilege! **And** these images are _very_ easy to distribute.
+You've built and packaged two applications, in totally different programming languages, with exactly one set of tooling installed on your machine. Both should work for all of us with a functional container runtime. The fact that both of these applications do the same thing isn't the point, and the fact that they're simple web applications doesn't mean that's all we can do. We've gained process portability across any Linux system - even a VM for the Windows and macOS users - with consistent environments for building, downloading, and running OCI-compliant container images. **And**, for those of us using `podman`, they're running isolated even from other processes running as our own user, let alone the rest of the system we're running on. **And**, because of the `USER` line in the multistage build for our Rust application, even inside the container the process has no privilege. **And** these images are _very_ easy to distribute.
 
 ### A note on distribution
 
