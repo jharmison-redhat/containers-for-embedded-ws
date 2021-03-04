@@ -226,6 +226,8 @@ $ curl localhost:5000
 Hello, world, from 36abd89b4292!
 ```
 
+This is why the `flask run` call in the Dockerfile `CMD` had the host parameter - it needed to ensure that the webserver would be able to accept requests that didn't originate from inside the container. Docker, depending on your network configuration, may not need this setting; you should set it anyways, for those environments that do.
+
 You can `Ctrl+C` the server again - we're done with that for now.
 
 ## What did that even get us?
