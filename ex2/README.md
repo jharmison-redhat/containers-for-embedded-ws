@@ -230,7 +230,11 @@ docker exec -it helloworld bash
 This should drop you into a terminal inside the container, again as root, but now your shell is a second process running alongside our flask server.
 
 ```console
-curl localhost:5000
+[root@080739f71fd0 /]# curl localhost:5000
+Hello, world, from 080739f71fd0!
+[root@080739f71fd0 /]# exit
+exit
+```
 
 We can specify individual ports to forward, though. `Ctrl+C` your flask server and it should quit gracefully, then try running it again like this:
 
