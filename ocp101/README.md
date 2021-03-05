@@ -9,7 +9,7 @@ You will need a Red Hat Individual Developer account (they're free!), a system o
 You're going to be running an OpenShift cluster locally - in a single node, on your own machine. You can spin these up completely free with a Red Hat Individual Developer account and experience the majority of OpenShift's features on a small scale, so you should sign up for one if you don't already have access to a Red Hat account with entitlements on it.
 
 1. Head to the [Red Hat Developers portal](https://developers.redhat.com/) and click the link in the top right to log in:
-    [!login](./login.png)
+    ![login](./login.png)
 1. Click on the link where it says "Don't have an account? Create one now."
 1. Fill out the information.
 1. Welcome to the Red Hat Developers program!
