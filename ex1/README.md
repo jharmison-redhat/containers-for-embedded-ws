@@ -1,4 +1,4 @@
-# Exercise 1
+# Exercise 1 - Why do containers exist?
 
 ## Prerequisites
 
