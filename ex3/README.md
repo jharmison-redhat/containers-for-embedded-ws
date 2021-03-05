@@ -6,6 +6,14 @@ For this to work, you'll need a container runtime (or the ability to install one
 
 These examples assume you are in this directory subordinate to the root of the project, meaning your are in a folder named `ex3` inside `containers-for-embedded-ws`.
 
+## Setup
+
+We just need to make our target directory for our compilation.
+
+```sh
+mkdir src/dist
+```
+
 ## Basic exploration
 
 Unlike our previous exercise, we're not going to be using a Dockerfile to build this program. We're going to use one that's already published. If you'd like to take a look at the Dockerfile (it's quite complex!), it's publicly available [here](https://github.com/multiarch/crossbuild/blob/master/Dockerfile).
