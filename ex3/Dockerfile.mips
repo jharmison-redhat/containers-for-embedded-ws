@@ -1,0 +1,9 @@
+FROM registry.fedoraproject.org/fedora:33 as base
+RUN dnf -y install \
+    qemu-system-mips \
+    qemu-user \
+ && dnf clean all -y \
+ && mkdir -p /project
+WORKDIR /project
+USER 1001
+ENTRYPOINT ["qemu-mipsel"]
