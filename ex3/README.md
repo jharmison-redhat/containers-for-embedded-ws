@@ -23,19 +23,19 @@ This image is published to the world's largest public container registry, [Docke
 The first program we're going to compile is a pretty simple Hello World binary on MIPS. The documentation on that image tells you how to use it, and you don't need to do anything to download the image first. You should be able to simply run it, and your runtime will download it for you before executing it:
 
 ```sh
-docker run --rm -v ./src:/workdir -e CROSS_TRIPLE=mipsel-linux-gnu docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-mipsel
+docker run --rm -v "$(pwd)/src:/workdir" -e CROSS_TRIPLE=mipsel-linux-gnu docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-mipsel
 ```
 
 Note that in my case, because I'm running on an SELinux enabled system and trying to pass a directory into the container (which runs with a different SELinux label), I get the following error message:
 
 ```console
-$ docker run --rm -v ./src:/workdir -e CROSS_TRIPLE=mipsel-linux-gnu docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-mipsel
+$ docker run --rm -v "$(pwd)/src:/workdir" -e CROSS_TRIPLE=mipsel-linux-gnu docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-mipsel
 gcc: error: helloworld.c: Permission denied
 gcc: fatal error: no input files
 compilation terminated.
 ```
 
-That's easy enough to fix by appending a `:Z` to the end of the volume specification, causing `podman` (which is pretending to be Docker) to relabel the directory on the fly for mounting. Now, running with `-v ./src:/workdir:Z`, I got.... well, no output. But a file named `helloworld-mipsel` should show up in your `src/dist` directory!
+That's easy enough to fix by appending a `:Z` to the end of the volume specification, causing `podman` (which is pretending to be Docker) to relabel the directory on the fly for mounting. Now, running with `-v "$(pwd)/src:/workdir:Z`," I got.... well, no output. But a file named `helloworld-mipsel` should show up in your `src/dist` directory!
 
 ```console
 $ ls -halF src/dist/helloworld-mipsel
@@ -57,7 +57,7 @@ Something you may have picked up on - as we've been using a common base for all 
 Let's use our mips-runner to run `helloworld`:
 
 ```console
-$ docker run --rm -v ./src:/project mips-runner dist/helloworld-mipsel
+$ docker run --rm -v "$(pwd)/src:/project" mips-runner dist/helloworld-mipsel
 Hello, World!
 ```
 
@@ -66,8 +66,8 @@ Note that again, I had to use `:Z` after my volume specification personally - th
 Okay, now, consider the case where we may be targeting multiple generations of some system that are on slightly different architectures. To build `helloworld` for both ARM and AARCH64, run the following:
 
 ```sh
-docker run --rm -v ./src:/workdir -e CROSS_TRIPLE=arm-linux-gnueabi docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-arm
-docker run --rm -v ./src:/workdir -e CROSS_TRIPLE=aarch64-linux-gnu docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-aarch64
+docker run --rm -v "$(pwd)/src:/workdir" -e CROSS_TRIPLE=arm-linux-gnueabi docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-arm
+docker run --rm -v "$(pwd)/src:/workdir" -e CROSS_TRIPLE=aarch64-linux-gnu docker.io/multiarch/crossbuild:latest gcc -static helloworld.c -o dist/helloworld-aarch64
 ```
 
 Double check all your binaries to make sure they're the file types you expect them to be:
@@ -90,8 +90,8 @@ docker build . -f Dockerfile.aarch64 -t aarch64-runner
 And finally, to run them both to make sure they're working like we expect:
 
 ```sh
-docker run --rm -v ./src:/project arm-runner dist/helloworld-arm
-docker run --rm -v ./src:/project aarch64-runner dist/helloworld-aarch64
+docker run --rm -v "$(pwd)/src:/project" arm-runner dist/helloworld-arm
+docker run --rm -v "$(pwd)/src:/project" aarch64-runner dist/helloworld-aarch64
 ```
 
 ## The point
